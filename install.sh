@@ -69,7 +69,9 @@ rm /tmp/fp_requirements.txt
 # Step 5: Install NVDiffRast
 echo ""
 echo "Step 5: Installing NVDiffRast..."
-python -m pip install --quiet --no-cache-dir git+https://github.com/NVlabs/nvdiffrast.git
+# Set flag to allow unsupported compiler for CUDA 11.8 with GCC 12+
+export NVCC_PREPEND_FLAGS='-allow-unsupported-compiler'
+python -m pip install --no-build-isolation --no-cache-dir git+https://github.com/NVlabs/nvdiffrast.git
 
 # Step 6: Install Kaolin
 echo ""
@@ -183,6 +185,13 @@ cd "$PROJECT_ROOT/FoundationPose/weights"
 gdown --folder https://drive.google.com/drive/folders/1DFezOAD0oD1BblsXVxqDsl8fj0qzB82i --remaining-ok || {
     echo "Warning: FoundationPose weights download failed"
 }
+
+# Copy weights to correct location
+if [ -d "no_diffusion/2023-10-28-18-33-37" ]; then
+    echo "Organizing FoundationPose weights..."
+    cp -r no_diffusion/2023-10-28-18-33-37 .
+    cp -r no_diffusion/2024-01-11-20-02-45 .
+fi
 
 # Download Qwen2-VL weights
 echo "Downloading Qwen2-VL weights..."
