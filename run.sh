@@ -18,4 +18,5 @@ python src/obj_pose_track.py \
 --force_apply_color \
 --apply_color "[0, 159, 237]" \
 --est_refine_iter 10 \
---track_refine_iter 3
+--track_refine_iter 3 \
+--show_realtime

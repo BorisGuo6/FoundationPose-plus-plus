@@ -261,6 +261,11 @@ def pose_track(
         track_refine_iter: int,
         activate_2d_tracker: bool = False,
         activate_kalman_filter: bool = False,
+        show_realtime: bool = False,
+        apply_scale: float = 0.01,
+        force_apply_color: bool = False,
+        apply_color: list = None,
+        kf_measurement_noise_scale: float = 0.05,
 ):
     #################################################
     # Read the initial mask
@@ -303,9 +308,11 @@ def pose_track(
     if isinstance(mesh, trimesh.Scene):
         mesh = mesh.dump(concatenate=True)
     # Convert units to meters
-    mesh.apply_scale(args.apply_scale)
-    if args.force_apply_color:
-        mesh = trimesh_add_pure_colored_texture(mesh, color=np.array(args.apply_color), resolution=10)
+    mesh.apply_scale(apply_scale)
+    if force_apply_color:
+        if apply_color is None:
+            apply_color = [0, 159, 237]
+        mesh = trimesh_add_pure_colored_texture(mesh, color=np.array(apply_color), resolution=10)
 
     to_origin, extents = trimesh.bounds.oriented_bounds(mesh)
     bbox = np.stack([-extents / 2, extents / 2], axis=0).reshape(2, 3)
@@ -353,7 +360,7 @@ def pose_track(
     #################################################
 
     if activate_kalman_filter:
-        kf = KalmanFilter6D(args.kf_measurement_noise_scale)
+        kf = KalmanFilter6D(kf_measurement_noise_scale)
 
     total_frames = len(frame_color_list)
     pose_seq = [None] * total_frames  # Initialize as None
@@ -473,6 +480,11 @@ def pose_track(
             imageio.imwrite(
                 pose_visualization_color_filename, vis_color
             )
+            
+            # Display realtime visualization if enabled
+            if show_realtime:
+                cv2.imshow('Pose Tracking', vis_color[..., ::-1])  # Convert RGB to BGR for cv2
+                cv2.waitKey(1)
             # pose_visualization_depth_filename = os.path.join(pose_visualization_path, frame_depth_filename)
             # imageio.imwrite(
             #     pose_visualization_depth_filename, vis_depth
@@ -512,6 +524,7 @@ if __name__ == "__main__":
     parser.add_argument("--apply_scale", type=float, default=0.01, help="Mesh scale factor in meters (1.0 means no scaling), commonly use 0.01")
     parser.add_argument("--force_apply_color", action='store_true', help="force a color for colorless mesh")
     parser.add_argument("--apply_color", type=json.loads, default="[0, 159, 237]", help="RGB color to apply, in format 'r,g,b'. Only effective if force_apply_color")
+    parser.add_argument("--show_realtime", action='store_true', help="Display real-time tracking visualization in a window")
     args = parser.parse_args()
 
     pose_track(
@@ -528,6 +541,11 @@ if __name__ == "__main__":
         args.track_refine_iter,
         args.activate_2d_tracker,
         args.activate_kalman_filter,
+        args.show_realtime,
+        args.apply_scale,
+        args.force_apply_color,
+        args.apply_color,
+        args.kf_measurement_noise_scale,
     )
 
     torch.cuda.empty_cache()
